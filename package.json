@@ -1,7 +1,7 @@
 {
   "name": "chatup",
   "version": "0.0.1",
-  "description": "A program that creates backups of twitch messages.",
+  "description": "Chatup is an extremely simple, easy to use backup service for twitch messages.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -9,6 +9,8 @@
   "author": "Joshua Benfield",
   "license": "MIT",
   "dependencies": {
+    "sqlite": "^4.0.23",
+    "sqlite3": "^5.0.2",
     "tmi.js": "^1.8.5"
   }
 }
