@@ -4,7 +4,7 @@
   "description": "Chatup is an extremely simple, easy to use backup service for twitch messages.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start":"node index.js"
   },
   "author": "Joshua Benfield",
   "license": "MIT",

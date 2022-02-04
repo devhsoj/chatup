@@ -1,7 +1,8 @@
-const {existsSync,mkdirSync} = require('fs')
+const { existsSync, mkdirSync, statSync } = require('fs')
+const { resolve } = require('path')
+const { open } = require('sqlite')
+
 const sqlite3 = require('sqlite3')
-const {resolve} = require('path')
-const {open} = require('sqlite')
 const tmi = require('tmi.js')
 
 ;(async () => {
@@ -21,9 +22,24 @@ const tmi = require('tmi.js')
             mkdirSync(resolve(__dirname,'backups/'))
         }
 
+        const timestamp = new Date()
+        const stats = {
+            messages:0,
+            subMessages:0,
+            latestMessage:{
+                username:'',
+                message:''
+            },
+            archive:{
+                size:0
+            }
+        }
+
+
+        const filename = resolve(__dirname,`backups/${timestamp.getTime()}.db`)
         const db = await open({
-            filename:resolve(__dirname,'backups/' + Date.now() + '.db'),
-            driver:sqlite3.Database
+            driver:sqlite3.Database,
+            filename
         })
 
         process.on('SIGINT',async () => {
@@ -31,12 +47,12 @@ const tmi = require('tmi.js')
             process.exit(0)
         })
     
-        await db.exec('CREATE TABLE messages(id VARCHAR(36) PRIMARY KEY NOT NULL,channel VARCHAR(26),username VARCHAR(25),subscribed bool,message text);')
-    
+        await db.exec('CREATE TABLE messages(id VARCHAR(36) PRIMARY KEY NOT NULL,channel VARCHAR(26),username VARCHAR(25),subscribed bool,message text)')
+
         client.on('message',async (channel,tags,message) => {
             try {
-                const {id,username,subscriber} = tags
-    
+                const { id, username, subscriber } = tags
+
                 await db.run(
                     'INSERT INTO messages (id,channel,username,subscribed,message) VALUES (?,?,?,?,?)',
                     id,
@@ -45,11 +61,39 @@ const tmi = require('tmi.js')
                     subscriber,
                     message
                 )
+
+                stats.latestMessage = {
+                    username,
+                    message
+                }
+
+                if(subscriber) {
+                    stats.subMessages++
+                }
+
+                stats.messages++
             } catch(err) {
-                console.trace('Failed to save message:',err)
+                console.trace(`Failed to save message: ${err}`)
             }
         })
+
+        setInterval(() => {
+            stats.archive.size = statSync(filename).size
+
+            console.clear()
+            console.log(`
+Backing up messages for channels: ${channels.join(',')}
+                
+Total messages: ${stats.messages}
+Subscriber messages: ${stats.subMessages}
+
+Latest message: [${stats.latestMessage.username}]: ${stats.latestMessage.message}
+
+Backup size: ${stats.archive.size / 1024} kb
+            `
+            )
+        },1000)
     } catch(err) {
-        console.trace('Failed to start:',err)
+        console.trace(`Failed to start ${err}`)
     }
 })()
